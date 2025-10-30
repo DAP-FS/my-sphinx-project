@@ -1,19 +1,44 @@
-name: Deploy Sphinx documentation to Pages
+name: Deploy Sphinx documentation to GitHub Pages
 
 on:
   push:
-    branches: [main]  # or master
+    branches: [ main, master ]  # supports both main and master
 
 jobs:
-  pages:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
+
     steps:
-      - id: deployment
-        uses: sphinx-notes/pages@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Sphinx and dependencies
+        run: |
+          pip install -U sphinx
+          # Add any Sphinx theme or extensions your project needs
+          # Example: pip install furo sphinx-rtd-theme myst-parser
+
+      - name: Build documentation
+        run: |
+          sphinx-build -b html . ./build/html
+          # The output directory is ./build/html, containing index.html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/html
 
